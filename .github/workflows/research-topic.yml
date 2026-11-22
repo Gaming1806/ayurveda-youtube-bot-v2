@@ -1,0 +1,59 @@
+name: Research Topic
+
+on:
+  workflow_dispatch:
+    inputs:
+      topic:
+        description: "Topic to search (e.g. ayurveda acidity)"
+        required: true
+        default: "ayurveda"
+      days:
+        description: "Look back this many days"
+        required: false
+        default: "14"
+      country:
+        description: "News country code (US, IN, GB...)"
+        required: false
+        default: "US"
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      YT_OAUTH_TOKEN: ${{ secrets.YT_OAUTH_TOKEN }}
+      TOPIC: ${{ github.event.inputs.topic }}
+      DAYS: ${{ github.event.inputs.days }}
+      COUNTRY: ${{ github.event.inputs.country }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Restore token.json
+        if: env.YT_OAUTH_TOKEN != ''
+        run: echo "${YT_OAUTH_TOKEN}" | base64 -d > ./token.json
+
+      - name: Warn if no OAuth token
+        if: env.YT_OAUTH_TOKEN == ''
+        run: echo "::warning::No YT_OAUTH_TOKEN secret, so only the news search will run."
+
+      - name: Search latest videos and news
+        run: python scripts/check_latest.py --topic "$TOPIC" --days "$DAYS" --country "$COUNTRY"
+
+      - name: Save report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: research-report
+          path: research/report.md
+          if-no-files-found: ignore
