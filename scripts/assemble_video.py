@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Combine footage and voice-over into a final MP4 using ffmpeg.
+The footage is looped as needed so the video lasts as long as the voice-over.
 No API key required.
 """
 import argparse
@@ -14,7 +15,8 @@ def main():
     parser.add_argument("--footage", default="footage.mp4", help="Path to video footage")
     parser.add_argument("--audio", default="voice.wav", help="Path to voice-over WAV")
     parser.add_argument("--output", default="final_video.mp4", help="Output MP4 path")
-    parser.add_argument("--duration", type=int, default=30, help="Target duration in seconds")
+    parser.add_argument("--duration", type=int, default=0,
+                        help="Optional maximum duration in seconds (0 = match the voice-over)")
     args = parser.parse_args()
 
     if not os.path.exists(args.footage):
@@ -26,18 +28,20 @@ def main():
 
     cmd = [
         "ffmpeg", "-y",
-        "-i", args.footage,
+        "-stream_loop", "-1", "-i", args.footage,   # loop footage endlessly
         "-i", args.audio,
-        "-filter_complex",
-        f"[0:v]scale=1280:720,setsar=1,trim=duration={args.duration}[vid];"
-        f"[1:a]atrim=duration={args.duration}[aud]",
-        "-map", "[vid]",
-        "-map", "[aud]",
-        "-c:v", "libx264",
+        # Fit into 1280x720 without stretching, padding with black bars
+        "-vf", "scale=1280:720:force_original_aspect_ratio=decrease,"
+               "pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1",
+        "-map", "0:v:0", "-map", "1:a:0",
+        "-c:v", "libx264", "-pix_fmt", "yuv420p",
         "-c:a", "aac",
-        "-shortest",
-        args.output,
+        "-movflags", "+faststart",
+        "-shortest",                                 # ends when the voice-over ends
     ]
+    if args.duration > 0:
+        cmd += ["-t", str(args.duration)]
+    cmd.append(args.output)
 
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:

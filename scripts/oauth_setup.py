@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
 One-time OAuth flow to create token.json for YouTube uploads.
-Run locally once, then add token.json content as GitHub Secret YT_OAUTH_TOKEN.
+Run locally once, then add the base64 of token.json as GitHub Secret YT_OAUTH_TOKEN.
 """
+import json
 import os
 import sys
-import webbrowser
 from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
 
 SCOPES = [
+    "https://www.googleapis.com/auth/youtube",
     "https://www.googleapis.com/auth/youtube.upload",
     "https://www.googleapis.com/auth/youtube.readonly",
 ]
@@ -20,56 +20,43 @@ def main():
         print("❌ client_secret.json not found in project root.")
         sys.exit(1)
 
-    # Read client_id from the file
-    import json
     with open("client_secret.json", "r") as f:
         data = json.load(f)
 
-    # Check if it's a web or installed type
-    if "web" in data:
-        client_type = "web"
-    elif "installed" in data:
-        client_type = "installed"
+    if "installed" in data:
+        print("✅ Detected desktop (installed) OAuth client")
+    elif "web" in data:
+        print("⚠️ Detected a 'web' OAuth client. Recommended: create a 'Desktop app' client instead.")
+        print("   (A web client must have http://localhost:8080/ as an authorised redirect URI.)")
     else:
         print("❌ Invalid client_secret.json. Re-download from Google Cloud Console.")
         sys.exit(1)
 
-    print(f"✅ Detected {client_type} OAuth client")
-
     flow = InstalledAppFlow.from_client_secrets_file("client_secret.json", SCOPES)
 
-    # Try run_local_server with a fixed port
-    print("\n🔐 Opening browser for authentication...")
-    print("If the browser doesn't open automatically, visit the URL printed below.\n")
-
+    print("\n🔐 Starting authentication...")
     try:
         creds = flow.run_local_server(
             port=8080,
             open_browser=True,
-            authorization_prompt_message="Please visit this URL to authorize: {url}",
+            prompt="consent",          # ensures a refresh token is returned
+            authorization_prompt_message="If the browser doesn't open, visit: {url}",
             success_message="Authentication successful! You can close this tab.",
         )
     except Exception as e:
-        print(f"❌ run_local_server failed: {e}")
-        print("\nTrying alternate method...\n")
-        # Fallback: manual URL + code entry
-        auth_url, _ = flow.authorization_url(
-            access_type="offline",
-            include_granted_scopes="true",
-        )
-        print(f"Open this URL in your browser:\n{auth_url}\n")
-        auth_code = input("Enter the authorization code: ").strip()
-        try:
-            flow.fetch_token(code=auth_code)
-            creds = flow.credentials
-        except Exception as e2:
-            print(f"❌ Failed to fetch token: {e2}")
-            sys.exit(1)
+        print(f"❌ Authentication failed: {e}")
+        sys.exit(1)
+
+    if not creds.refresh_token:
+        print("❌ No refresh token returned. Remove the app at "
+              "https://myaccount.google.com/permissions and run this script again.")
+        sys.exit(1)
 
     with open("token.json", "w", encoding="utf-8") as f:
         f.write(creds.to_json())
 
     print("\n✅ OAuth token saved to token.json")
+    print("Next: base64-encode it and save it as the GitHub secret YT_OAUTH_TOKEN.")
 
 
 if __name__ == "__main__":

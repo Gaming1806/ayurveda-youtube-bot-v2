@@ -1,6 +1,6 @@
 # 🌿 Ayurvedic YouTube Bot – Fully Automated & Free
 
-A complete, ready-to-run pipeline that creates, assembles, and uploads Ayurvedic videos to YouTube **without any paid API keys**.  
+A complete, ready-to-run pipeline that creates, assembles, and uploads Ayurvedic videos to YouTube **without any paid API keys** (none are used anywhere in this project).  
 The only external account you need is a free Google Cloud project for OAuth (YouTube uploads).
 
 ## ✨ What this project does
@@ -210,7 +210,11 @@ You can also place your own royalty-free MP4 clips inside the `footage/` folder;
 
 ## ⚠️ Important Notes
 
-* **Videos are uploaded as `private`** by default. Change `--privacy public` in the workflow or in `upload_to_youtube.py` when you are ready to publish.
+* **Videos are uploaded as `private`** by default. Use the **Publish YouTube Video** workflow to make one public or unlisted after review.
+* **OAuth consent screen:** set the app to **In production** (APIs & Services → OAuth consent screen). In *Testing* mode the refresh token expires after 7 days and the daily bot will stop working.
+* **Scopes changed:** the token now needs the `youtube` scope. If you created `token.json` earlier, delete it, rerun `python scripts/oauth_setup.py`, and update the `YT_OAUTH_TOKEN` secret.
+* **API upload restriction:** YouTube may keep videos uploaded via the API from new, unaudited Google Cloud projects private. If publishing fails, check YouTube's API audit requirements.
+* **Custom thumbnails** require a verified YouTube channel.
 * **YouTube Partner Program** requires 1,000 subscribers and 4,000 watch hours (or 10M Shorts views). Automation helps you publish consistently, but real audience growth still depends on content quality and compliance with YouTube’s Community Guidelines.
 * Add a medical disclaimer in descriptions (the template already includes "Not medical advice").
 * Do **not** commit `token.json`, `.env`, or `client_secret.json` with real secrets. Use GitHub Secrets instead.

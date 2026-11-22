@@ -15,7 +15,7 @@ def main():
     args = parser.parse_args()
 
     if not os.path.exists(args.input):
-        print(f"❌ Title file not found: {args.input}")
+        print(f"⚠️ Title file not found: {args.input} - using default title")
         title = "Ayurvedic Wellness Tips"
     else:
         with open(args.input, "r", encoding="utf-8") as f:
@@ -24,7 +24,7 @@ def main():
             title = "Ayurvedic Wellness Tips"
 
     # Create image
-    img = Image.new("RGB", (1280, 720), color=(255, 107, 107))  # soft orange
+    img = Image.new("RGB", (1280, 720), color=(230, 126, 34))  # orange
     draw = ImageDraw.Draw(img)
 
     # Try to load a truetype font; fall back to default
@@ -70,7 +70,8 @@ def main():
         bbox = draw.textbbox((0, 0), line, font=font)
         w = bbox[2] - bbox[0]
         x = (1280 - w) // 2
-        draw.text((x, y), line, fill=(255, 255, 255), font=font)
+        draw.text((x, y), line, fill=(255, 255, 255), font=font,
+                  stroke_width=3, stroke_fill=(60, 30, 0))
         y += line_height
 
     img.save(args.output, "JPEG", quality=90)

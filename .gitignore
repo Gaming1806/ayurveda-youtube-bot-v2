@@ -6,3 +6,10 @@ client_secret.json
 .env
 *.zip
 .DS_Store
+
+# Generated at runtime
+content/
+footage.mp4
+final_video.mp4
+voice.wav
+thumbnail.jpg

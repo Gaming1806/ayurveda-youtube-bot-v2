@@ -41,9 +41,13 @@ TOPICS = [
 ]
 
 
+DISCLAIMER = " This video is for general information only and is not medical advice. Please consult a qualified doctor before trying any remedy, especially if you are pregnant, on medication, or have a health condition."
+
+
 def main():
     os.makedirs("content", exist_ok=True)
     topic = random.choice(TOPICS)
+    topic = {**topic, "script": topic["script"] + DISCLAIMER}
 
     with open("content/title.txt", "w", encoding="utf-8") as f:
         f.write(topic["title"])
