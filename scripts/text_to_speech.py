@@ -31,7 +31,24 @@ def main():
         print("❌ Script text is empty.")
         sys.exit(1)
 
-    engine = pyttsx3.init()
+    # Try espeak-ng first (Linux), then espeak, then default
+    engine = None
+    for driver in ["espeak-ng", "espeak", None]:
+        try:
+            if driver:
+                engine = pyttsx3.init(driverName=driver)
+            else:
+                engine = pyttsx3.init()
+            print(f"✅ Using TTS driver: {driver or 'default'}")
+            break
+        except Exception as e:
+            print(f"⚠️ Driver '{driver or 'default'}' failed: {e}")
+            engine = None
+
+    if engine is None:
+        print("❌ No TTS driver available. Install espeak-ng: sudo apt install espeak-ng")
+        sys.exit(1)
+
     # Slightly slower rate for clarity
     engine.setProperty("rate", 150)
     engine.save_to_file(text, args.output)
